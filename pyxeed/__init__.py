@@ -14,4 +14,4 @@ __all__ = xeed.__all__ \
     + translator.__all__
 
 
-__version__ = "0.0.1"
+__version__ = "0.0.2"
