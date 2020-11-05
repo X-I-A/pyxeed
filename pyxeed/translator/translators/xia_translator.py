@@ -15,17 +15,17 @@ class XIATranslator(Translator):
         return line
 
     # Depositor Scope - Data format = record
-    def get_depositor_data(self, data, src_encode, tar_encode, header):
+    def get_encode_data(self, data, src_encode, tar_encode, header):
         data_spec = header.get('data_spec', None)
         if data_spec == 'x-i-a':
             return self.encoder(data, src_encode, tar_encode)
         else:
             record_data = json.loads(self.encoder(data, src_encode, 'flat'))
-            translated_data = self.get_archive_data(record_data, header)
+            translated_data = self.get_record_data(record_data, header)
             return self.encoder(json.dumps(translated_data), 'flat', tar_encode)
 
     # Archive Scope 
-    def get_archive_data(self, data: list, header):
+    def get_record_data(self, data: list, header):
         data_spec = header.get('data_spec', None)
         # Case 1: x-i-a type : Already well-formatted
         if data_spec == 'x-i-a':

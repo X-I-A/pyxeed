@@ -21,7 +21,7 @@ class SapTranslator(Translator):
         return line
 
     # Archive Scope - data is a python dictionary list
-    def get_archive_data(self, data, header):
+    def get_record_data(self, data, header):
         data_spec = header.get('data_spec', None)
         if data_spec == 'slt':
             data_age = header['age']

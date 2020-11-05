@@ -17,7 +17,7 @@ def test_filename_pattern(extractor):
     assert not extractor.header_file_regex.search("01schema.json")
 
 def test_get_header(extractor):
-    header = extractor.get_header()
+    header = extractor.get_table_header()
     assert 'person_simple' in header['meta_data']
     assert len(json.loads(header['data'])) == 9
 
