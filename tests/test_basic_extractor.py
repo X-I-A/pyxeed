@@ -18,8 +18,7 @@ def test_filename_pattern(extractor):
 
 def test_get_header(extractor):
     header = extractor.get_table_header()
-    assert 'person_simple' in header['meta_data']
-    assert len(json.loads(header['data'])) == 9
+    assert 'meta_data' in header
 
 def test_get_aged_data(extractor):
     counter = 0

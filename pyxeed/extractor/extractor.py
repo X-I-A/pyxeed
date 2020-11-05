@@ -5,7 +5,6 @@ __all__ = ['Extractor']
 
 class Extractor():
     def __init__(self):
-        super().__init__()
         self.logger = logging.getLogger("Xeed.Extractor")
         self.topic_id = ''
         self.table_id = ''
