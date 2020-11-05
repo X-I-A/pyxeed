@@ -31,6 +31,10 @@ class BasicExtractor(Extractor):
                 self.data_file_regex = re.compile(value)
 
     def get_header(self) -> dict:
+        """
+        Get Table Header
+        :return: "meta_data": table related data; "data": column related data
+        """
         for filename in os.listdir(self.source_dir):
             if self.header_file_regex.search(filename):
                 data_value = list()
@@ -48,24 +52,28 @@ class BasicExtractor(Extractor):
                                     'data': encoder(json.dumps(data_value), 'flat', self.data_encode)}
 
     def get_aged_data(self):
+        """
+        Get Table Data
+        :return: dictionary with 'age', 'end_age' and 'data'.
+        """
         data_list = [f for f in os.listdir(self.source_dir) if self.data_file_regex.search(f)]
         data_list = sorted(data_list, key=lambda x:int(x[:-5]))
-        data_file, start_age, content = '', 0, list
+        data_file, start_age, content = '', 0, None
         for data_file in data_list:
             with open(os.path.join(self.source_dir, data_file)) as f:
                 if start_age:
                     result = dict()
                     result['age'] = start_age
                     result['end_age'] = int(data_file[:-5]) - 1
-                    result['data'] = encoder(json.dumps(content), 'flat', self.data_encode)
+                    result['data'] = content
                     yield result
                 start_age = int(data_file[:-5])
-                content = json.load(f)
+                content = f.read()
         if start_age:
             result = dict()
             result['age'] = start_age
             result['end_age'] = int(data_file[:-5]) - 1
-            result['data'] = encoder(json.dumps(content), 'flat', self.data_encode)
+            result['data'] = content
             yield result
 
     def get_normal_data(self):
