@@ -20,11 +20,6 @@ class Puller(pyxeed.pusher.Pusher):
             raise XeedTypeError("XED-000001")
 
     def pull_and_push(self):
-        # Step 1: Send header data
-        header = self.extrator.get_table_header()
-        data = header.pop('data')
-        self.push_data(header, data)
-        # Step 2: Send body data
         if self.extrator.aged:
             for header in self.extrator.get_aged_data():
                 data = header.pop('data')
