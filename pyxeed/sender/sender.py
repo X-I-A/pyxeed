@@ -42,7 +42,7 @@ class Sender():
         """
         raise NotImplementedError
 
-    def _send_by_file(self, data: bytes) -> str:
+    def _send_by_file(self, header: dict, data: bytes) -> str:
         """
         Seding data by File
         :param data: gzipped content
@@ -53,12 +53,15 @@ class Sender():
     def send(self, header: dict, gzip_data: bytes) -> str:
         """
         Sending message
-        :param header: X-I Header
-        :param data: X-I Data
+        :param header: X-I-A Header
+        :param data: X-I-A Data
         :return: Message ID
         """
         if not self.message_client:
             raise NotImplementedError
+        # The sent data must be x-i-a spec with record format
+        header['data_spec'] = 'x-i-a'
+        header['data_format'] = 'record'
         # Case 1: Header => Always sent by message
         if int(header.get('age', 0)) == 1:
             # Compress data =>
@@ -66,9 +69,9 @@ class Sender():
         # Case 2: Document Sent
         else:
             if not self.file_client:
-                self._send_by_message(header, gzip_data)
+                return self._send_by_message(header, gzip_data)
             else:
-                file_path = self._send_by_file(gzip_data)
+                file_path = self._send_by_file(header, gzip_data)
                 header['data_encode'] = 'gzip'
                 header['data_store'] = 'file'
-                self._send_by_message(header, file_path)
+                return self._send_by_message(header, file_path)

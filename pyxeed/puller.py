@@ -1,30 +1,71 @@
-import pyxeed.pusher
+from pyxeed.utils.core import MESSAGE_SIZE, FILE_SIZE
 from pyxeed.utils.exceptions import XeedTypeError, XeedDataSpecError
-from pyxeed.extractor.extractors.basic_extractor import BasicExtractor
+from pyxeed.pusher import Pusher
+from pyxeed.extractor.extractor import Extractor
+from pyxeed.extractor.extractors.dir_extractor import DirExtractor
 
 __all__ = ['Puller']
 
 
-class Puller(pyxeed.pusher.Pusher):
+class Puller(Pusher):
     """
     Pull from extractor and push to messager
     """
-    def __init__(self, extractor=None, messager=None, translators=list()):
-        super().__init__(messager=messager, translators=translators)
+    def __init__(self, extractor=None, sender=None, decoders=list(), formatters=list(), translators=list()):
+        super().__init__(sender=sender, decoders=decoders, formatters=formatters, translators=translators)
         if not extractor:
-            self.extrator = BasicExtractor()
-        elif isinstance(extractor, pyxeed.extractor.Extractor):
+            self.extrator = DirExtractor()
+        elif isinstance(extractor, Extractor):
             self.extrator = extractor
         else:
             self.logger.error("The Choosen Extractor has a wrong Type")
             raise XeedTypeError("XED-000001")
 
-    def pull_and_push(self):
-        if self.extrator.aged:
-            for header in self.extrator.get_aged_data():
-                data = header.pop('data')
-                self.push_data(header, data)
-        else:
-            for header in self.extrator.get_normal_data():
-                data = header.pop('data')
-                self.push_data(header, data)
+    def pull_and_push(self, topic_id, table_id, aged, start_seq, message_size=MESSAGE_SIZE, file_size=FILE_SIZE,
+                      **kwargs):
+        """
+
+        :param topic_id:
+        :param table_id:
+        :param aged:
+        :param start_seq:
+        :param message_size:
+        :param file_size:
+        :param kwargs: 'age' and 'end_age' for aged documents
+        :return:
+        """
+        header, data, cur_age, cur_start_seq = dict(), list(), 0, ''
+        for extr_data in self.extrator.extract():
+            assert isinstance(extr_data, dict)
+            # Start sending data to make a send at last
+            if header:
+                cur_age, cur_start_seq, last_header = self.push_data(header, data, message_size, file_size)
+            # Header construction
+            header = extr_data['header']
+            header['topic_id'] = topic_id
+            header['table_id'] = table_id
+            # Data construction
+            data = extr_data['data']
+            # Data send case 1: header
+            if extr_data['extract_info']['type'] == 'header':
+                header['aged'] = aged
+                header['age'] = 1
+                header['start_seq'] = start_seq
+            else:
+                header.pop('aged', None)
+                # Data send case 2: Aged
+                if aged:
+                    header['start_seq'] = start_seq
+                    if 'age' not in kwargs and cur_age == 0:
+                        header['age'] = 2
+                    elif 'age' in kwargs and cur_age == 0:
+                        header['age'] = kwargs['age']
+                    else:
+                        header['age'] = last_header.get('end_age', last_header['age']) + 1
+                # Data send case 3: Normal
+                else:
+                    header['start_seq'] = str(int(last_header['start_seq']) + 1)
+            # Last push, end_age might be necessary
+            if 'end_age' in kwargs and extr_data['extract_info']['type'] != 'header':
+                header['end_age'] = kwargs['end_age']
+            self.push_data(header, data, message_size, file_size)

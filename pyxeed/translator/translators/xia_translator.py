@@ -20,7 +20,7 @@ class XIATranslator(Translator):
         return line
 
     def init_translator(self, header: dict, data: list):
-        if header['data_spec'] == 'x-i-a':
+        if header.get('data_spec', '') == 'x-i-a':
             self.translate_method = self._get_origin_line
         if int(header.get('age', 0)) == 1:
             self.translate_method = self._get_header_line

@@ -25,31 +25,31 @@ class Decoder():
             raise XeedDecodeError("XED-000007")
 
         if from_encode == to_encode:
-            return data
+            yield data
         if from_encode == 'gzip' and to_encode == 'flat':
-            return gzip.decompress(data).decode()
+            yield gzip.decompress(data).decode()
         elif from_encode == 'b64g' and to_encode == 'flat':
-            return gzip.decompress(base64.b64decode(data.encode())).decode()
+            yield gzip.decompress(base64.b64decode(data.encode())).decode()
         elif from_encode == 'blob' and to_encode == 'flat':
-            return data.decode()
+            yield data.decode()
         elif from_encode == 'flat' and to_encode == 'b64g':
-            return base64.b64encode(gzip.compress(data.encode())).decode()
+            yield base64.b64encode(gzip.compress(data.encode())).decode()
         elif from_encode == 'gzip' and to_encode == 'b64g':
-            return base64.b64encode(data).decode()
+            yield base64.b64encode(data).decode()
         elif from_encode == 'blob' and to_encode == 'b64g':
-            return base64.b64encode(gzip.compress(data)).decode()
+            yield base64.b64encode(gzip.compress(data)).decode()
         elif from_encode == 'flat' and to_encode == 'gzip':
-            return gzip.compress(data.encode())
+            yield gzip.compress(data.encode())
         elif from_encode == 'b64g' and to_encode == 'gzip':
-            return base64.b64decode(data.encode())
+            yield base64.b64decode(data.encode())
         elif from_encode == 'blob' and to_encode == 'gzip':
-            return gzip.compress(data)
+            yield gzip.compress(data)
         elif from_encode == 'flat' and to_encode == 'blob':
-            return data.encode()
+            yield data.encode()
         elif from_encode == 'gzip' and to_encode == 'blob':
-            return gzip.decompress(data)
+            yield gzip.decompress(data)
         elif from_encode == 'b64g' and to_encode == 'blob':
-            return gzip.decompress(base64.b64decode(data.encode()))
+            yield gzip.decompress(base64.b64decode(data.encode()))
 
     def _encode_to_blob(self, data_or_io, from_encode, **kwargs):
         if isinstance(data_or_io, io.BufferedIOBase):
