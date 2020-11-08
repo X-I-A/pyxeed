@@ -1,1 +1,1 @@
-from .basic_extractor import BasicExtractor
+from .dir_extractor import DirExtractor

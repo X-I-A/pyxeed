@@ -6,8 +6,8 @@ from ..extractor import Extractor
 
 class BasicExtractor(Extractor):
     """
-    Extract all json files a directory with the following default setting
-    * Table structure will be first json file which doesn't start with a number
+    Extract all files from a directory with the following default setting
+    * Table structure file will be first file which doesn't start with a number
     * Data filename should contains only number.
     * Age number deducted by file name ######.json
     """

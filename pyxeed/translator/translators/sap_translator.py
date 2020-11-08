@@ -1,5 +1,3 @@
-import json
-import logging
 from ..translator import Translator
 
 class SapTranslator(Translator):
@@ -8,8 +6,11 @@ class SapTranslator(Translator):
         self.spec_list = ['slt', 'ddic']
         self.line_oper = dict()
 
-    def slt_line_translator(self, line: dict, age):
-        line['_AGE'] = int(age)
+    def _get_ddic_line(self, line: dict, **kwargs):
+        return line
+
+    def _get_slt_line(self, line: dict, **kwargs):
+        line['_AGE'] = int(kwargs['age'])
         if 'IUUT_OPERAT_FLAG' not in line:
             line.pop('_RECNO')
         else:
@@ -17,17 +18,11 @@ class SapTranslator(Translator):
             line['_OP'] = line.pop('IUUT_OPERAT_FLAG')
         return line
 
-    def ddic_line_transaltor(self, line: dict):
-        return line
+    def init_translator(self, header: dict, data: list):
+        if header['data_spec'] == 'slt':
+            self.translate_method = self._get_slt_line
+        elif header['data_spec'] == 'ddic':
+            self.translate_method = self._get_ddic_line
 
-    # Archive Scope - data is a python dictionary list
-    def get_record_data(self, data, header):
-        data_spec = header.get('data_spec', None)
-        if data_spec == 'slt':
-            data_age = header['age']
-            return [self.slt_line_translator(line, data_age) for line in data]
-        elif data_spec == 'ddic':
-            return [self.ddic_line_transaltor(line) for line in data]
-        else:
-            logging.error("Data Spec {} is supported by SAP Translator".format(data_spec))
-            return
+    def get_translated_line(self, line: dict, **kwargs):
+        raise NotImplementedError

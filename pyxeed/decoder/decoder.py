@@ -52,7 +52,20 @@ class Decoder():
             return gzip.decompress(base64.b64decode(data.encode()))
 
     def _encode_to_blob(self, data_or_io, from_encode, **kwargs):
-        raise NotImplementedError
+        if isinstance(data_or_io, io.BufferedIOBase):
+            if from_encode == 'blob':
+                yield data_or_io
+            elif from_encode == 'gzip':
+                with gzip.GzipFile(fileobj=data_or_io) as f:
+                    yield f
+            else:
+                # flat or b64g, terminating IO
+                data_or_io = data_or_io.read().decode()
+                for output in self.basic_encoder(data_or_io, from_encode, 'blob'):
+                    yield output
+        else:
+            for output in self.basic_encoder(data_or_io, from_encode, 'blob'):
+                yield output
 
     def decoder(self, data_or_io, from_encode, to_encode, **kwargs):
         """
@@ -62,9 +75,6 @@ class Decoder():
         :param encode:
         :return:
         """
-        if from_encode == to_encode:
-            yield data_or_io
-
         if len(self.support_encodes) == 0:
             raise NotImplementedError
 
@@ -84,17 +94,27 @@ class Decoder():
             self.logger.error("Cannot decoder to {}".format(to_encode))
             raise XeedDecodeError("XED-000006")
 
+        # Blob type
         if from_encode in ['blob', 'flat', 'gzip', 'b64g']:
-            if isinstance(data_or_io, io.BufferedIOBase):
-                if from_encode in ['flat', 'b64g']:
-                    data = data_or_io.read().decode()
-                else:
-                    data = data_or_io.read()
+            if to_encode == 'blob':
+                for output in self._encode_to_blob(data_or_io, from_encode):
+                    yield output
             else:
-                data = data_or_io
-            for output in self.basic_encoder(data, from_encode, to_encode):
-                yield output
+                # Terminating
+                if isinstance(data_or_io, io.BufferedIOBase):
+                    if from_encode in ['flat', 'b64g']:
+                        data_or_io = data_or_io.read().decode()
+                    else:
+                        data_or_io = data_or_io.read()
+                for output in self.basic_encoder(data_or_io, from_encode, to_encode):
+                    yield output
         else:
             for output in self._encode_to_blob(data_or_io, from_encode, **kwargs):
-                yield self.basic_encoder(output, 'blob', to_encode)
+                if to_encode == 'blob':
+                    yield output
+                elif isinstance(output, io.BufferedIOBase):
+                    output = output.read()
+                    yield self.basic_encoder(output, 'blob', to_encode)
+                else:
+                    yield self.basic_encoder(output, 'blob', to_encode)
 

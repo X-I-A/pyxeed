@@ -1,4 +1,3 @@
-import json
 from ..translator import Translator
 
 class XIATranslator(Translator):
@@ -6,36 +5,29 @@ class XIATranslator(Translator):
         super().__init__()
         self.spec_list = ['x-i-a']
 
-    def age_line_translator(self, line: dict, age):
-        line['_AGE'] = age
+    def _get_origin_line(self, line: dict, **kwargs) -> dict:
         return line
 
-    def normal_line_translator(self, line: dict, start_seq):
-        line['_SEQ'] = start_seq
+    def _get_header_line(self, line: dict, **kwargs) -> dict:
         return line
 
-    # Depositor Scope - Data format = record
-    def get_encode_data(self, data, src_encode, tar_encode, header):
-        data_spec = header.get('data_spec', None)
-        if data_spec == 'x-i-a':
-            return self.encoder(data, src_encode, tar_encode)
-        else:
-            record_data = json.loads(self.encoder(data, src_encode, 'flat'))
-            translated_data = self.get_record_data(record_data, header)
-            return self.encoder(json.dumps(translated_data), 'flat', tar_encode)
+    def _get_aged_line(self, line: dict, **kwargs) -> dict:
+        line['_AGE'] = kwargs['age']
+        return line
 
-    # Archive Scope 
-    def get_record_data(self, data: list, header):
-        data_spec = header.get('data_spec', None)
-        # Case 1: x-i-a type : Already well-formatted
-        if data_spec == 'x-i-a':
-            return data
-        # Case 2: Header -> No modification
-        elif int(header.get('age', 0)) == 1:
-            return data
-        # Case 3: Standard Aged Document
+    def _get_normal_line(self, line: dict, **kwargs) -> dict:
+        line['_SEQ'] = kwargs['start_seq']
+        return line
+
+    def init_translator(self, header: dict, data: list):
+        if header['data_spec'] == 'x-i-a':
+            self.translate_method = self._get_origin_line
+        if int(header.get('age', 0)) == 1:
+            self.translate_method = self._get_header_line
         elif 'age' in header:
-            return [self.age_line_translator(line, int(header['age'])) for line in data]
-        # Case 4: Stand Normal Documnet
-        elif 'start_seq' in header:
-            return [self.normal_line_translator(line, header['start_seq']) for line in data]
+            self.translate_method = self._get_aged_line
+        else:
+            self.translate_method = self._get_normal_line
+
+    def get_translated_line(self, line: dict, **kwargs) -> dict:
+        return self.translate_method(line, **kwargs)
