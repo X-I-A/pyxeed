@@ -2,7 +2,8 @@ import gzip
 import json
 import logging
 
-__all__ = ['Decoder']
+
+__all__ = ['Sender']
 
 
 class Sender():
@@ -62,6 +63,12 @@ class Sender():
         # The sent data must be x-i-a spec with record format
         header['data_spec'] = 'x-i-a'
         header['data_format'] = 'record'
+        # Format Header
+        for key, value in header.items():
+            if isinstance(value, (int, float, bool)):
+                header[key] = str(value)
+            elif isinstance(value, (list, dict)):
+                header[key] = json.dumps(value)
         # Case 1: Header => Always sent by message
         if int(header.get('age', 0)) == 1:
             # Compress data =>

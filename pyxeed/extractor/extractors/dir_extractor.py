@@ -42,10 +42,10 @@ class DirExtractor(Extractor):
                             self.logger.warning("field definition not found at {}".format(filename))
                             continue
                         result['data'] = header_content.pop(field_key)
-                    result['meta-data'] = header_content
+                    result['header']['meta-data'] = header_content
                     result['header']['data_encode'] = 'body'
                     result['header']['data_format'] = 'record'
-                    result['extract_info'] = {'type': 'header', 'name': filename,
+                    result['extract_info'] = {'type': 'header', 'table_id': filename,
                                               'fullname': os.path.join(self.dir_path, filename),
                                               'data_type': file_io.__class__.__name__}
                     yield result
@@ -60,7 +60,7 @@ class DirExtractor(Extractor):
                         result['header']['data_spec'] = result['header'].pop('data_body_spec')
                         result['header'].pop('data_header_spec', None)
                     result['data'] = file_io
-                    result['extract_info'] = {'type': 'data', 'name': filename,
+                    result['extract_info'] = {'type': 'data', 'table_id': filename,
                                               'age_hint': int(filename.split('.')[0]),
                                               'fullname': os.path.join(self.dir_path, filename),
                                               'data_type': file_io.__class__.__name__}

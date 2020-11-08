@@ -1,5 +1,4 @@
 import logging
-import pyxeed
 from pyxeed.utils.core import LOGGING_LEVEL
 from pyxeed.utils.exceptions import XeedTypeError, XeedDataSpecError
 from pyxeed.decoder.decoder import Decoder

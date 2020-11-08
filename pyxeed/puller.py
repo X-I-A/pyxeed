@@ -1,5 +1,6 @@
 from pyxeed.utils.core import MESSAGE_SIZE, FILE_SIZE
 from pyxeed.utils.exceptions import XeedTypeError, XeedDataSpecError
+from pyxeed.xeed import Xeed
 from pyxeed.pusher import Pusher
 from pyxeed.extractor.extractor import Extractor
 from pyxeed.extractor.extractors.dir_extractor import DirExtractor
@@ -7,19 +8,23 @@ from pyxeed.extractor.extractors.dir_extractor import DirExtractor
 __all__ = ['Puller']
 
 
-class Puller(Pusher):
+class Puller(Xeed):
     """
-    Pull from extractor and push to messager
+    Pull from extractor and Push
     """
-    def __init__(self, extractor=None, sender=None, decoders=list(), formatters=list(), translators=list()):
-        super().__init__(sender=sender, decoders=decoders, formatters=formatters, translators=translators)
-        if not extractor:
-            self.extrator = DirExtractor()
-        elif isinstance(extractor, Extractor):
-            self.extrator = extractor
+    def __init__(self, extractor, pusher):
+        super().__init__()
+        if isinstance(extractor, Extractor):
+            self.extractor = extractor
         else:
             self.logger.error("The Choosen Extractor has a wrong Type")
             raise XeedTypeError("XED-000001")
+
+        if isinstance(pusher, Pusher):
+            self.pusher = pusher
+        else:
+            self.logger.error("The Choosen Pusher has a wrong Type")
+            raise XeedTypeError("XED-000015")
 
     def pull_and_push(self, topic_id, table_id, aged, start_seq, message_size=MESSAGE_SIZE, file_size=FILE_SIZE,
                       **kwargs):
@@ -35,11 +40,11 @@ class Puller(Pusher):
         :return:
         """
         header, data, cur_age, cur_start_seq = dict(), list(), 0, ''
-        for extr_data in self.extrator.extract():
+        for extr_data in self.extractor.extract():
             assert isinstance(extr_data, dict)
             # Start sending data to make a send at last
             if header:
-                cur_age, cur_start_seq, last_header = self.push_data(header, data, message_size, file_size)
+                cur_age, cur_start_seq, last_header = self.pusher.push_data(header, data, message_size, file_size)
             # Header construction
             header = extr_data['header']
             header['topic_id'] = topic_id
@@ -68,4 +73,4 @@ class Puller(Pusher):
             # Last push, end_age might be necessary
             if 'end_age' in kwargs and extr_data['extract_info']['type'] != 'header':
                 header['end_age'] = kwargs['end_age']
-            self.push_data(header, data, message_size, file_size)
+            self.pusher.push_data(header, data, message_size, file_size)

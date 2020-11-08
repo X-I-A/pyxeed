@@ -14,6 +14,7 @@ XED-000011: Format Destination Error
 XED-000012: Decoder Type Error
 XED-000013: Formatter Type Error
 XED-000014: X-I-A Header Error
+XED-000015: Pusher Type Error
 """
 class XeedTypeError(Exception): pass
 class XeedDataSpecError(Exception): pass
