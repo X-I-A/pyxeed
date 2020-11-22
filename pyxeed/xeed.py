@@ -1,65 +1,106 @@
 import logging
-from pyxeed.utils.core import LOGGING_LEVEL
-from pyxeed.utils.exceptions import XeedTypeError, XeedDataSpecError
-from pyxeed.decoder.decoder import Decoder
-from pyxeed.formatter.formatter import Formatter
-from pyxeed.translator.translator import Translator
-from pyxeed.decoder.decoders import ZipDecoder
-from pyxeed.formatter.formatters import CSVFormatter
-from pyxeed.translator.translators import SapTranslator, XIATranslator
+from typing import List, Dict
+from xialib import BasicStorer
+from xialib import BasicDecoder, ZipDecoder
+from xialib import BasicFormatter, CSVFormatter
+from xialib import BasicTranslator, SapTranslator
+from xialib.storer import Storer
+from xialib.decoder import Decoder
+from xialib.formatter import Formatter
+from xialib.publisher import Publisher
+from xialib.translator import Translator
 
 __all__ = ['Xeed']
 
 
 class Xeed():
-    def __init__(self, decoders=list(), formatters=list(), translators=list()):
+    """Xeed Application
+
+    """
+    log_level = logging.WARNING
+
+    def __init__(self, **kwargs):
         self.logger = logging.getLogger("Xeed")
-        self.logger.setLevel(LOGGING_LEVEL)
+        self.log_context = {'context': ''}
+        self.logger.setLevel(self.log_level)
 
-        # Standard Decoders
-        self.decoders = dict()
-        xia_decoder = Decoder()
-        zip_decoder = ZipDecoder()
-        for std_decoder in [xia_decoder, zip_decoder]:
-            for encode in std_decoder.support_encodes:
-                self.decoders[encode] = std_decoder
-        # Customized Decoders (can overwrite standard ones)
-        for cust_decoder in decoders:
-            if isinstance(cust_decoder, Decoder):
-                for encode in cust_decoder.support_encodes:
-                    self.decoders[encode] = cust_decoder
-            else:
-                self.logger.error("The Choosen Decoder has a wrong Type")
-                raise XeedTypeError("XED-000012")
 
-        # Standard Formatters
-        self.formatters = dict()
-        xia_formatter = Formatter()
-        csv_formatter = CSVFormatter()
-        for std_formatter in [xia_formatter, csv_formatter]:
-            for format in std_formatter.support_formats:
-                self.formatters[format] = std_formatter
-        # Customized Formatters (can overwrite standard ones)
-        for cust_formatter in formatters:
-            if isinstance(cust_formatter, Formatter):
-                for format in cust_formatter.support_formats:
-                    self.formatters[format] = cust_formatter
+        if 'publishers' in kwargs:
+            if not isinstance(kwargs['publishers'], dict) or \
+                    not all(isinstance(publisher, Publisher) for key, publisher in kwargs['publishers'].items()):
+                self.logger.error("publisher should have type of Publisher", extra=self.log_context)
+                raise TypeError("XED-000019")
             else:
-                self.logger.error("The Choosen formatter has a wrong Type")
-                raise XeedTypeError("XED-000013")
+                self.publishers = kwargs['publishers']
 
-        # Standard Translators
-        self.translators = dict()
-        xia_trans = XIATranslator()
-        sap_trans = SapTranslator()
-        for std_trans in [xia_trans, sap_trans]:
-            for spec in std_trans.spec_list:
-                self.translators[spec] = std_trans
-        # Customized Translators (can overwrite standard ones)
-        for cust_trans in translators:
-            if isinstance(cust_trans, Translator):
-                for spec in cust_trans.spec_list:
-                    self.translators[spec] = cust_trans
+        if 'storers' in kwargs:
+            storers = [BasicStorer()]
+            if not isinstance(kwargs['storers'], list) \
+                    or not all(isinstance(storer, Storer) for storer in kwargs['storers']):
+                self.logger.error("storer should have type of Storer", extra=self.log_context)
+                raise TypeError("XED-000018")
             else:
-                self.logger.error("The Choosen Translator has a wrong Type")
-                raise XeedTypeError("XED-000003")
+                storers.extend(kwargs['storers'])
+                self.storer_dict = self.get_storer_register_dict(storers)
+
+        if 'decoders' in kwargs:
+            decoders = [BasicDecoder(), ZipDecoder()]
+            if not isinstance(kwargs['decoders'], list) or \
+                    not all(isinstance(decoder, Decoder) for decoder in kwargs['decoders']):
+                self.logger.error("decoder should have type of Decoder", extra=self.log_context)
+                raise TypeError("XED-000012")
+            else:
+                decoders.extend(kwargs['decoders'])
+                self.decoder_dict = self.get_decoder_register_dict(decoders)
+
+        if 'formatters' in kwargs:
+            formatters = [BasicFormatter(), CSVFormatter()]
+            if not isinstance(kwargs['formatters'], list) or \
+                    not all(isinstance(formatter, Formatter) for formatter in kwargs['formatters']):
+                self.logger.error("The Choosen formatter has a wrong Type", extra=self.log_context)
+                raise TypeError("XED-000015")
+            else:
+                formatters.extend(kwargs['formatters'])
+                self.formatter_dict = self.get_formatter_register_dict(formatters)
+
+        if 'translators' in kwargs:
+            translators = [BasicTranslator(), SapTranslator()]
+            if not isinstance(kwargs['translators'], list) or \
+                    not all(isinstance(translator, Translator) for translator in kwargs['translators']):
+                self.logger.error("The Choosen Translator has a wrong Type", extra=self.log_context)
+                raise TypeError("XED-000003")
+            else:
+                translators.extend(kwargs['translators'])
+                self.translator_dict = self.get_translator_register_dict(translators)
+
+    @classmethod
+    def get_storer_register_dict(cls, storer_list: List[Storer]) -> Dict[str, Storer]:
+        register_dict = dict()
+        for storer in storer_list:
+            for store_type in storer.store_types:
+                register_dict[store_type] = storer
+        return register_dict
+
+    @classmethod
+    def get_decoder_register_dict(cls, decoder_list: List[Decoder]) -> Dict[str, Decoder]:
+        register_dict = dict()
+        for decoder in decoder_list:
+            for encode in decoder.supported_encodes:
+                register_dict[encode] = decoder
+        return register_dict
+
+    @classmethod
+    def get_formatter_register_dict(cls, formatter_list: List[Decoder]) -> Dict[str, Formatter]:
+        register_dict = dict()
+        for formatter in formatter_list:
+            for format in formatter.support_formats:
+                register_dict[format] = formatter
+        return register_dict
+
+    @classmethod
+    def get_translator_register_dict(cls, translator_list: List[Decoder]) -> Dict[str, Translator]:
+        register_dict = dict()
+        for translator in translator_list:
+            for spec in translator.spec_list:
+                register_dict[spec] = translator
+        return register_dict
