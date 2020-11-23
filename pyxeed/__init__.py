@@ -11,4 +11,4 @@ __all__ = xeed.__all__ \
     + relayer.__all__ \
 
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
