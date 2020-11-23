@@ -5,7 +5,7 @@ import logging
 import hashlib
 from typing import Union, Dict, List
 from xialib.publisher import Publisher
-from xialib.storer import Storer
+from xialib.storer import Storer, RWStorer, IOStorer
 from pyxeed.xeed import Xeed
 
 __all__ = ['Relayer']
@@ -65,8 +65,8 @@ class Relayer(Xeed):
         publish_storer = None
         if data_store is not None:
             publish_storer = self.storer_dict.get(data_store, None)
-            if publish_storer is None:
-                self.logger.error("No storer for store type {}".format(data_store), extra=self.log_context)
+            if publish_storer is None or not isinstance(publish_storer, RWStorer):
+                self.logger.error("No rw storer for store type {}".format(data_store), extra=self.log_context)
                 raise ValueError("XED-000005")
 
         if header['data_store'] != 'body':
@@ -74,11 +74,7 @@ class Relayer(Xeed):
             if reader_storer is None:
                 self.logger.error("No storer for store type {}".format(header['data_store']), extra=self.log_context)
                 raise ValueError("XED-000005")
-            try:
-                read_get_io = reader_storer.get_io_stream
-                reader_io_support = True
-            except(AttributeError, NotImplementedError) as e:  # pragma: no cover
-                reader_io_support = False  # pragma: no cover
+            reader_io_support = True if isinstance(reader_storer, IOStorer) else False
         else:
             reader_storer, reader_io_support = None, None
         return active_decoder, \
