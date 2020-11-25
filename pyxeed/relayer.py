@@ -144,7 +144,7 @@ class Relayer(Xeed):
             for decoded_blob in active_decoder.decoder(raw_data, header['data_encode'], 'blob'):
                 data_body.extend([active_translator.get_translated_line(raw_line, age=age, start_seq=start_seq)
                                   for raw_line in active_formatter.formatter(decoded_blob, header['data_format'])])
-            header['data_spec'] = header.get('data_spec', 'x-i-a')
+                header['data_spec'] = 'x-i-a'
             header['data_format'] = 'record'
             header['data_encode'] = 'gzip'
             self._publish_data(header, gzip.compress(json.dumps(data_body, ensure_ascii=False).encode()),
@@ -175,7 +175,7 @@ class Relayer(Xeed):
                             if zipped_size + chunk_size > size_limit:
                                 zipped_io.write(']'.encode())
                                 zipped_io.close()
-                                header['data_spec'] = header.get('data_spec', 'x-i-a')
+                                header['data_spec'] = 'x-i-a'
                                 header['data_format'] = 'record'
                                 header['data_encode'] = 'gzip'
                                 header, age, end_age, start_seq = \
@@ -187,7 +187,7 @@ class Relayer(Xeed):
                     if raw_size > 0:
                         zipped_io.write(']'.encode())
                         zipped_io.close()
-                        header['data_spec'] = header.get('data_spec', 'x-i-a')
+                        header['data_spec'] = 'x-i-a'
                         header['data_format'] = 'record'
                         header['data_encode'] = 'gzip'
                         header, age, end_age, start_seq = \
@@ -197,7 +197,7 @@ class Relayer(Xeed):
                                            publish_storer, data_store, store_path)
                 # Need to add an empty message add the end to fill the age gap
                 if age < end_age:
-                    header['data_spec'] = header.get('data_spec', 'x-i-a')
+                    header['data_spec'] = 'x-i-a'
                     header['data_format'] = 'record'
                     header['data_encode'] = 'gzip'
                     header, age, end_age, start_seq = \
