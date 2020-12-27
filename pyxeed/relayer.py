@@ -218,6 +218,7 @@ class Relayer(Xeed):
         header['topic_id'] = topic_id
         header['table_id'] = table_id
         if int(header.get('age', 0)) == 1:
+            header['event_type'] = 'source_table_init'
             header['event_token'] = datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(uuid.uuid4())
         if storer is None:
             header['data_store'] = 'body'
