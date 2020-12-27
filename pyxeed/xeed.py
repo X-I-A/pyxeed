@@ -18,12 +18,12 @@ class Xeed():
 
     """
     log_level = logging.WARNING
+    api_url = 'api.x-i-a.com'
 
     def __init__(self, **kwargs):
         self.logger = logging.getLogger("Xeed")
         self.log_context = {'context': ''}
         self.logger.setLevel(self.log_level)
-
 
         if 'publishers' in kwargs:
             if not isinstance(kwargs['publishers'], dict) or \
