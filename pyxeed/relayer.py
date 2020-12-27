@@ -3,6 +3,8 @@ import json
 import gzip
 import logging
 import hashlib
+import uuid
+from datetime import datetime
 from typing import Union, Dict, List
 from xialib.publisher import Publisher
 from xialib.storer import Storer, RWStorer, IOStorer
@@ -123,6 +125,7 @@ class Relayer(Xeed):
             = self._get_active_units(header, publisher_id, data_store)
 
         age, end_age, start_seq = self._get_age_start_seq(header)
+
         # Case 1: flow pass-through
         if header['data_store'] == 'body' \
                 and header['data_encode'] in ['blob', 'flat', 'gzip', 'b64g'] \
@@ -134,7 +137,9 @@ class Relayer(Xeed):
                                    publish_storer, data_store, store_path)
         # Case 2: full-data send mode
         elif header['data_store'] == 'body' or \
-                ( header['data_store'] != 'body' and not reader_io_support) or size_limit == 0:
+                (header['data_store'] != 'body' and not reader_io_support) or \
+                int(header.get('age', 0)) == 1 or \
+                size_limit == 0:
             active_translator.compile(header, data_or_io)
             if header['data_store'] == 'body':
                 raw_data = data_or_io
@@ -209,9 +214,11 @@ class Relayer(Xeed):
 
     def _publish_data(self, header: dict, data: bytes,
                       publisher: Publisher, destination: str, topic_id: str, table_id: str,
-                      storer: Storer = None, data_store: str = None, store_path: str = None):
+                      storer: RWStorer = None, data_store: str = None, store_path: str = None):
         header['topic_id'] = topic_id
         header['table_id'] = table_id
+        if int(header.get('age', 0)) == 1:
+            header['event_token'] = datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(uuid.uuid4())
         if storer is None:
             header['data_store'] = 'body'
             publisher.publish(destination, topic_id, header, data)
