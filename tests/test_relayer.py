@@ -11,6 +11,13 @@ def relayer():
     relayer = Relayer(publishers=publishers)
     yield relayer
 
+def test_push_header(relayer):
+    with open(os.path.join('.', 'input', 'person_simple', 'schema.json'), 'rb') as f:
+        data = f.read()
+        header = {'start_seq': '20201108170000000000', 'data_spec': 'x-i-a', 'age': '1',
+                  'data_store': 'body', 'data_encode': 'blob', 'data_format': 'record'}
+    relayer.push_data(header, data, 'client-001', destination, 'test-00', 'simple', 0)
+
 def test_pass_through(relayer):
     with open(os.path.join('.', 'input', 'person_simple', '000001.json'), 'rb') as f:
         data = f.read()
