@@ -4,6 +4,8 @@ import gzip
 import logging
 import hashlib
 import uuid
+import time
+import http.client
 from datetime import datetime
 from typing import Union, Dict, List
 from xialib.publisher import Publisher
@@ -217,9 +219,11 @@ class Relayer(Xeed):
                       storer: RWStorer = None, data_store: str = None, store_path: str = None):
         header['topic_id'] = topic_id
         header['table_id'] = table_id
+        # Header sent preparation: launch source table init event
         if int(header.get('age', 0)) == 1:
             header['event_type'] = 'source_table_init'
             header['event_token'] = datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(uuid.uuid4())
+
         if storer is None:
             header['data_store'] = 'body'
             publisher.publish(destination, topic_id, header, data)
@@ -229,3 +233,13 @@ class Relayer(Xeed):
             storer.write(data, location)
             header['data_store'] = data_store
             publisher.publish(destination, table_id, header, location)
+
+        # Heade post-check: Target tables must have been initialized
+        if int(header.get('age', 0)) == 1:
+            for i in range(6):
+                time.sleep(2 ** i)
+                conn = http.client.HTTPSConnection(self.api_url)
+                conn.request("GET", "/events/source-table-init/" + header['event_token'])
+                resp = conn.getresponse()
+                if resp.status == 200:
+                    break  # pragma: no cover
