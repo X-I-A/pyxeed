@@ -1,5 +1,6 @@
 import logging
 from typing import List, Dict
+from xialib import Service
 from xialib import BasicStorer
 from xialib import BasicDecoder, ZipDecoder
 from xialib import BasicFormatter, CSVFormatter
@@ -13,7 +14,7 @@ from xialib.translator import Translator
 __all__ = ['Xeed']
 
 
-class Xeed():
+class Xeed(Service):
     """Xeed Application
 
     """
@@ -21,17 +22,11 @@ class Xeed():
     api_url = 'api.x-i-a.com'
 
     def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.logger = logging.getLogger("Xeed")
         self.log_context = {'context': ''}
         self.logger.setLevel(self.log_level)
 
-        if 'publishers' in kwargs:
-            if not isinstance(kwargs['publishers'], dict) or \
-                    not all(isinstance(publisher, Publisher) for key, publisher in kwargs['publishers'].items()):
-                self.logger.error("publisher should have type of Publisher", extra=self.log_context)
-                raise TypeError("XED-000019")
-            else:
-                self.publishers = kwargs['publishers']
 
         if 'storers' in kwargs:
             storers = [BasicStorer()]
@@ -41,7 +36,7 @@ class Xeed():
                 raise TypeError("XED-000018")
             else:
                 storers.extend(kwargs['storers'])
-                self.storer_dict = self.get_storer_register_dict(storers)
+                self.storer = self.get_storer_register_dict(storers)
 
         if 'decoders' in kwargs:
             decoders = [BasicDecoder(), ZipDecoder()]
@@ -51,7 +46,7 @@ class Xeed():
                 raise TypeError("XED-000012")
             else:
                 decoders.extend(kwargs['decoders'])
-                self.decoder_dict = self.get_decoder_register_dict(decoders)
+                self.decoder = self.get_decoder_register_dict(decoders)
 
         if 'formatters' in kwargs:
             formatters = [BasicFormatter(), CSVFormatter()]
@@ -61,7 +56,7 @@ class Xeed():
                 raise TypeError("XED-000015")
             else:
                 formatters.extend(kwargs['formatters'])
-                self.formatter_dict = self.get_formatter_register_dict(formatters)
+                self.formatter = self.get_formatter_register_dict(formatters)
 
         if 'translators' in kwargs:
             translators = [BasicTranslator(), SapTranslator()]
@@ -71,7 +66,7 @@ class Xeed():
                 raise TypeError("XED-000003")
             else:
                 translators.extend(kwargs['translators'])
-                self.translator_dict = self.get_translator_register_dict(translators)
+                self.translator = self.get_translator_register_dict(translators)
 
     @classmethod
     def get_storer_register_dict(cls, storer_list: List[Storer]) -> Dict[str, Storer]:

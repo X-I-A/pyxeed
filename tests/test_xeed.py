@@ -5,7 +5,7 @@ from pyxeed.xeed import Xeed
 
 def test_exceptions():
     with pytest.raises(TypeError):
-        xeed = Xeed(publishers=object())
+        xeed = Xeed(publisher=object())
     with pytest.raises(TypeError):
         xeed = Xeed(storers=object())
     with pytest.raises(TypeError):

@@ -12,10 +12,10 @@ from xialib.publisher import Publisher
 from xialib.storer import Storer, RWStorer, IOStorer
 from pyxeed.xeed import Xeed
 
-__all__ = ['Relayer']
+__all__ = ['Seeder']
 
 
-class Relayer(Xeed):
+class Seeder(Xeed):
     """Relay and publish message to Insight Module or even Directly to Agent Module
 
     Move the data from depositor to archiver. Design to store huge amount of data on column usage
@@ -25,10 +25,10 @@ class Relayer(Xeed):
         decoders (:obj:`list` of :obj:`Decoder`): Decode message of different type
         formatters (:obj:`list` of :obj:`Formatter`): Format message of different format
         translators (:obj:`list` of :obj:`Translator`): Translate message of different specification
-        publishers (:obj:`dict` of :obj:`Publisher`): Publish the message of standard format
+        publisher (:obj:`dict` of :obj:`Publisher`): Publish the message of standard format
     """
-    def __init__(self, publishers, storers=list(), decoders=list(), formatters=list(), translators=list()):
-        super().__init__(publishers=publishers, storers=storers, decoders=decoders, formatters=formatters,
+    def __init__(self, publisher, storers=list(), decoders=list(), formatters=list(), translators=list()):
+        super().__init__(publisher=publisher, storers=storers, decoders=decoders, formatters=formatters,
                          translators=translators)
         self.logger = logging.getLogger("Xeed.Relayer")
         if len(self.logger.handlers) == 0:
@@ -43,38 +43,38 @@ class Relayer(Xeed):
             self.logger.error("Header doesn't contain all needed fields", extra=self.log_context)
             raise ValueError("XED-000016")
 
-        active_decoder = self.decoder_dict.get(header['data_encode'])
+        active_decoder = self.decoder.get(header['data_encode'])
         if not active_decoder:
             self.logger.error("No decoder for encode {}".format(header['data_encode']), extra=self.log_context)
             raise ValueError("XED-000012")
 
-        active_formatter = self.formatter_dict.get(header['data_format'])
+        active_formatter = self.formatter.get(header['data_format'])
         if not active_formatter:
             self.logger.error("No formatter for format {}".format(header['data_format']), extra=self.log_context)
             raise ValueError("XED-000015")
 
         if 'data_spec' in header:
-            active_translator = self.translator_dict.get(header['data_spec'], None)
+            active_translator = self.translator.get(header['data_spec'], None)
         else:
-            active_translator = self.translator_dict.get('x-i-a')
+            active_translator = self.translator.get('x-i-a')
         if not active_translator:
             self.logger.error("No translator for data_spec {}".format(header['data_spec']), extra=self.log_context)
             raise ValueError("XED-000004")
 
-        active_publisher = self.publishers.get(publisher_id)
+        active_publisher = self.publisher.get(publisher_id)
         if not active_publisher:
             self.logger.error("No publisher: {} found".format(publisher_id), extra=self.log_context)
             raise ValueError("XED-000019")
 
         publish_storer = None
         if data_store is not None:
-            publish_storer = self.storer_dict.get(data_store, None)
+            publish_storer = self.storer.get(data_store, None)
             if publish_storer is None or not isinstance(publish_storer, RWStorer):
                 self.logger.error("No rw storer for store type {}".format(data_store), extra=self.log_context)
                 raise ValueError("XED-000005")
 
         if header['data_store'] != 'body':
-            reader_storer = self.storer_dict.get(header['data_store'], None)
+            reader_storer = self.storer.get(header['data_store'], None)
             if reader_storer is None:
                 self.logger.error("No storer for store type {}".format(header['data_store']), extra=self.log_context)
                 raise ValueError("XED-000005")
@@ -234,6 +234,7 @@ class Relayer(Xeed):
             header['data_store'] = data_store
             publisher.publish(destination, table_id, header, location)
 
+        """
         # Heade post-check: Target tables must have been initialized
         if int(header.get('age', 0)) == 1:
             for i in range(6):
@@ -243,3 +244,4 @@ class Relayer(Xeed):
                 resp = conn.getresponse()
                 if resp.status == 200:
                     break  # pragma: no cover
+        """
