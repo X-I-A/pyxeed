@@ -5,12 +5,12 @@ from pyxeed.xeed import Xeed
 
 def test_exceptions():
     with pytest.raises(TypeError):
-        xeed = Xeed(publishers=object())
+        xeed = Xeed(publisher=object())
     with pytest.raises(TypeError):
-        xeed = Xeed(storers=object())
+        xeed = Xeed(storer=object())
     with pytest.raises(TypeError):
-        xeed = Xeed(decoders=object())
+        xeed = Xeed(decoder=object())
     with pytest.raises(TypeError):
-        xeed = Xeed(formatters=object())
+        xeed = Xeed(formatter=object())
     with pytest.raises(TypeError):
-        xeed = Xeed(translators=object())
+        xeed = Xeed(translator=object())
