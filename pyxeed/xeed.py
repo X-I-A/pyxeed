@@ -56,7 +56,7 @@ class Xeed(Service):
             if isinstance(kwargs['translator'], dict):
                 default_translator.update(kwargs['translator'])
             else:
-                default_translator.update({"custom": kwargs['formatter']})
+                default_translator.update({"custom": kwargs['translator']})
         self.translator = self.get_translator_register_dict(default_translator)
 
     @classmethod
