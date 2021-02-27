@@ -27,9 +27,8 @@ class Seeder(Xeed):
         translators (:obj:`list` of :obj:`Translator`): Translate message of different specification
         publisher (:obj:`dict` of :obj:`Publisher`): Publish the message of standard format
     """
-    def __init__(self, publisher, storers=list(), decoders=list(), formatters=list(), translators=list()):
-        super().__init__(publisher=publisher, storers=storers, decoders=decoders, formatters=formatters,
-                         translators=translators)
+    def __init__(self, publisher, **kwargs):
+        super().__init__(publisher=publisher, **kwargs)
         self.logger = logging.getLogger("Xeed.Relayer")
         if len(self.logger.handlers) == 0:
             log_format = logging.Formatter('%(asctime)s-%(process)d-%(thread)d-%(module)s-%(funcName)s-%(levelname)s-'
@@ -43,7 +42,7 @@ class Seeder(Xeed):
             self.logger.error("Header doesn't contain all needed fields", extra=self.log_context)
             raise ValueError("XED-000016")
 
-        active_decoder = self.decoder.get(header['data_encode'])
+        active_decoder = self.decoder_dict.get(header['data_encode'])
         if not active_decoder:
             self.logger.error("No decoder for encode {}".format(header['data_encode']), extra=self.log_context)
             raise ValueError("XED-000012")
@@ -68,13 +67,13 @@ class Seeder(Xeed):
 
         publish_storer = None
         if data_store is not None:
-            publish_storer = self.storer.get(data_store, None)
+            publish_storer = self.storer_dict.get(data_store, None)
             if publish_storer is None or not isinstance(publish_storer, RWStorer):
                 self.logger.error("No rw storer for store type {}".format(data_store), extra=self.log_context)
                 raise ValueError("XED-000005")
 
         if header['data_store'] != 'body':
-            reader_storer = self.storer.get(header['data_store'], None)
+            reader_storer = self.storer_dict.get(header['data_store'], None)
             if reader_storer is None:
                 self.logger.error("No storer for store type {}".format(header['data_store']), extra=self.log_context)
                 raise ValueError("XED-000005")

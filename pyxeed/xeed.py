@@ -27,51 +27,42 @@ class Xeed(Service):
         self.log_context = {'context': ''}
         self.logger.setLevel(self.log_level)
 
-
-        if 'storers' in kwargs:
-            storers = [BasicStorer()]
-            if not isinstance(kwargs['storers'], list) \
-                    or not all(isinstance(storer, Storer) for storer in kwargs['storers']):
-                self.logger.error("storer should have type of Storer", extra=self.log_context)
-                raise TypeError("XED-000018")
+        default_storer = {"basic": BasicStorer()}
+        if 'storer' in kwargs:
+            if isinstance(kwargs['storer'], dict):
+                default_storer.update(kwargs['storer'])
             else:
-                storers.extend(kwargs['storers'])
-                self.storer = self.get_storer_register_dict(storers)
+                default_storer.update({"custom": kwargs['storer']})
+        self.storer_dict = self.get_storer_register_dict(default_storer)
 
-        if 'decoders' in kwargs:
-            decoders = [BasicDecoder(), ZipDecoder()]
-            if not isinstance(kwargs['decoders'], list) or \
-                    not all(isinstance(decoder, Decoder) for decoder in kwargs['decoders']):
-                self.logger.error("decoder should have type of Decoder", extra=self.log_context)
-                raise TypeError("XED-000012")
+        default_decoder = {"basic": BasicDecoder(), "zip": ZipDecoder()}
+        if 'decoder' in kwargs:
+            if isinstance(kwargs['decoder'], dict):
+                default_decoder.update(kwargs['decoder'])
             else:
-                decoders.extend(kwargs['decoders'])
-                self.decoder = self.get_decoder_register_dict(decoders)
+                default_decoder.update({"custom": kwargs['decoder']})
+        self.decoder_dict = self.get_decoder_register_dict(default_decoder)
 
-        if 'formatters' in kwargs:
-            formatters = [BasicFormatter(), CSVFormatter()]
-            if not isinstance(kwargs['formatters'], list) or \
-                    not all(isinstance(formatter, Formatter) for formatter in kwargs['formatters']):
-                self.logger.error("The Choosen formatter has a wrong Type", extra=self.log_context)
-                raise TypeError("XED-000015")
+        default_formatter = {"basic": BasicFormatter(), "csv": CSVFormatter()}
+        if 'formatter' in kwargs:
+            if isinstance(kwargs['formatter'], dict):
+                default_formatter.update(kwargs['formatter'])
             else:
-                formatters.extend(kwargs['formatters'])
-                self.formatter = self.get_formatter_register_dict(formatters)
+                default_formatter.update({"custom": kwargs['formatter']})
+        self.formatter = self.get_formatter_register_dict(default_formatter)
 
-        if 'translators' in kwargs:
-            translators = [BasicTranslator(), SapTranslator()]
-            if not isinstance(kwargs['translators'], list) or \
-                    not all(isinstance(translator, Translator) for translator in kwargs['translators']):
-                self.logger.error("The Choosen Translator has a wrong Type", extra=self.log_context)
-                raise TypeError("XED-000003")
+        default_translator = {"basic": BasicTranslator(), "sap": SapTranslator()}
+        if 'translator' in kwargs:
+            if isinstance(kwargs['translator'], dict):
+                default_translator.update(kwargs['translator'])
             else:
-                translators.extend(kwargs['translators'])
-                self.translator = self.get_translator_register_dict(translators)
+                default_translator.update({"custom": kwargs['formatter']})
+        self.translator = self.get_translator_register_dict(default_translator)
 
     @classmethod
-    def get_storer_register_dict(cls, storer_list: List[Storer]) -> Dict[str, Storer]:
+    def get_storer_register_dict(cls, storer_list: Dict[str, Storer]) -> Dict[str, Storer]:
         register_dict = dict()
-        for storer in storer_list:
+        for storer in [v for k,v in storer_list.items()]:
             for store_type in storer.store_types:
                 register_dict[store_type] = storer
         return register_dict
@@ -79,7 +70,7 @@ class Xeed(Service):
     @classmethod
     def get_decoder_register_dict(cls, decoder_list: List[Decoder]) -> Dict[str, Decoder]:
         register_dict = dict()
-        for decoder in decoder_list:
+        for decoder in [v for k,v in decoder_list.items()]:
             for encode in decoder.supported_encodes:
                 register_dict[encode] = decoder
         return register_dict
@@ -87,7 +78,7 @@ class Xeed(Service):
     @classmethod
     def get_formatter_register_dict(cls, formatter_list: List[Decoder]) -> Dict[str, Formatter]:
         register_dict = dict()
-        for formatter in formatter_list:
+        for formatter in [v for k,v in formatter_list.items()]:
             for format in formatter.support_formats:
                 register_dict[format] = formatter
         return register_dict
@@ -95,7 +86,7 @@ class Xeed(Service):
     @classmethod
     def get_translator_register_dict(cls, translator_list: List[Decoder]) -> Dict[str, Translator]:
         register_dict = dict()
-        for translator in translator_list:
+        for translator in [v for k,v in translator_list.items()]:
             for spec in translator.spec_list:
                 register_dict[spec] = translator
         return register_dict
