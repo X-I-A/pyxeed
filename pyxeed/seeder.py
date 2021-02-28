@@ -37,7 +37,10 @@ class Seeder(Xeed):
             console_handler.setFormatter(log_format)
             self.logger.addHandler(console_handler)
 
-    def _get_active_units(self, header: dict, publisher_id: str, data_store: str):
+        if isinstance(self.publisher, dict):
+            self.publisher = [v for k, v in self.publisher.items()][0]
+
+    def _get_active_units(self, header: dict, data_store: str):
         if not all(key in header for key in ['start_seq', 'data_encode', 'data_format', 'data_store']):
             self.logger.error("Header doesn't contain all needed fields", extra=self.log_context)
             raise ValueError("XED-000016")
@@ -60,11 +63,6 @@ class Seeder(Xeed):
             self.logger.error("No translator for data_spec {}".format(header['data_spec']), extra=self.log_context)
             raise ValueError("XED-000004")
 
-        active_publisher = self.publisher.get(publisher_id)
-        if not active_publisher:
-            self.logger.error("No publisher: {} found".format(publisher_id), extra=self.log_context)
-            raise ValueError("XED-000019")
-
         publish_storer = None
         if data_store is not None:
             publish_storer = self.storer_dict.get(data_store, None)
@@ -83,7 +81,6 @@ class Seeder(Xeed):
         return active_decoder, \
                active_formatter, \
                active_translator, \
-               active_publisher, \
                publish_storer, \
                reader_storer, \
                reader_io_support
@@ -111,7 +108,7 @@ class Seeder(Xeed):
         return header, age, end_age, start_seq
 
     def push_data(self, header: dict, data_or_io: Union[str, bytes, io.BufferedIOBase],
-                  publisher_id: str, destination: str, topic_id: str, table_id: str, size_limit: int,
+                  destination: str, topic_id: str, table_id: str, size_limit: int,
                   data_store: str = None, store_path: str = None):
         """Push data to a single destination
         """
@@ -119,11 +116,10 @@ class Seeder(Xeed):
         active_decoder, \
         active_formatter, \
         active_translator, \
-        active_publisher, \
         publish_storer, \
         reader_storer, \
         reader_io_support \
-            = self._get_active_units(header, publisher_id, data_store)
+            = self._get_active_units(header, data_store)
 
         age, end_age, start_seq = self._get_age_start_seq(header)
 
@@ -133,7 +129,7 @@ class Seeder(Xeed):
                 and header['data_format'] == 'record' and header.get('data_spec', '') == 'x-i-a':
             data_body = active_decoder.decoder(data_or_io, header['data_encode'], 'gzip')
             header['data_encode'] = 'gzip'
-            self._publish_data(header, data_or_io, active_publisher,
+            self._publish_data(header, data_or_io, self.publisher,
                                    destination, topic_id, table_id,
                                    publish_storer, data_store, store_path)
         # Case 2: full-data send mode
@@ -154,7 +150,7 @@ class Seeder(Xeed):
             header['data_format'] = 'record'
             header['data_encode'] = 'gzip'
             self._publish_data(header, gzip.compress(json.dumps(data_body, ensure_ascii=False).encode()),
-                               active_publisher, destination, topic_id, table_id,
+                               self.publisher, destination, topic_id, table_id,
                                publish_storer, data_store, store_path)
         # Case 3: IO Send mode with chunk support
         else:
@@ -187,7 +183,7 @@ class Seeder(Xeed):
                                 header, age, end_age, start_seq = \
                                     self._get_next_age_start_seq(header, age, end_age, start_seq)
                                 self._publish_data(header, data_io.getvalue(),
-                                                   active_publisher, destination, topic_id, table_id,
+                                                   self.publisher, destination, topic_id, table_id,
                                                    publish_storer, data_store, store_path)
                                 chunk_number, raw_size, data_io, zipped_size, zipped_io = 0, 0, None, 0, None
                     if raw_size > 0:
@@ -199,7 +195,7 @@ class Seeder(Xeed):
                         header, age, end_age, start_seq = \
                             self._get_next_age_start_seq(header, age, end_age, start_seq)
                         self._publish_data(header, data_io.getvalue(),
-                                           active_publisher, destination, topic_id, table_id,
+                                           self.publisher, destination, topic_id, table_id,
                                            publish_storer, data_store, store_path)
                 # Need to add an empty message add the end to fill the age gap
                 if age < end_age:
@@ -210,7 +206,7 @@ class Seeder(Xeed):
                         self._get_next_age_start_seq(header, age, end_age, start_seq)
                     header['end_age'] = end_age
                     self._publish_data(header, gzip.compress(b'[]'),
-                                       active_publisher, destination, topic_id, table_id,
+                                       self.publisher, destination, topic_id, table_id,
                                        publish_storer, data_store, store_path)
 
     def _publish_data(self, header: dict, data: bytes,
