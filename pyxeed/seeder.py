@@ -107,6 +107,11 @@ class Seeder(Xeed):
             start_seq = str(int(start_seq) + 1)
         return header, age, end_age, start_seq
 
+    def check_destination(self, destination: str, topic_id: str):
+        """Check Push Destination
+        """
+        return self.publisher.check_destination(destination, topic_id)
+
     def push_data(self, header: dict, data_or_io: Union[str, bytes, io.BufferedIOBase],
                   destination: str, topic_id: str, table_id: str, size_limit: int,
                   data_store: str = None, store_path: str = None):

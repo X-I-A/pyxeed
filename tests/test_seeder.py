@@ -11,6 +11,9 @@ def seeder():
     seeder = Seeder(publisher=publisher)
     yield seeder
 
+def test_check_destination(seeder):
+    assert seeder.check_destination(destination, 'test-00')
+
 def test_push_header(seeder):
     with open(os.path.join('.', 'input', 'person_simple', 'schema.json'), 'rb') as f:
         data = f.read()
