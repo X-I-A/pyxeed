@@ -29,7 +29,7 @@ class Seeder(Xeed):
     """
     def __init__(self, publisher, **kwargs):
         super().__init__(publisher=publisher, **kwargs)
-        self.logger = logging.getLogger("Xeed.Relayer")
+        self.logger = logging.getLogger("Xeed.Seeder")
         if len(self.logger.handlers) == 0:
             log_format = logging.Formatter('%(asctime)s-%(process)d-%(thread)d-%(module)s-%(funcName)s-%(levelname)s-'
                                           '%(context)s:%(message)s')
@@ -37,6 +37,7 @@ class Seeder(Xeed):
             console_handler.setFormatter(log_format)
             self.logger.addHandler(console_handler)
 
+        # Unique publisher support
         if isinstance(self.publisher, dict):
             self.publisher = [v for k, v in self.publisher.items()][0]
 
@@ -113,7 +114,7 @@ class Seeder(Xeed):
         return self.publisher.check_destination(destination, topic_id)
 
     def push_data(self, header: dict, data_or_io: Union[str, bytes, io.BufferedIOBase],
-                  destination: str, topic_id: str, table_id: str, size_limit: int,
+                  destination: str, topic_id: str, table_id: str, size_limit: int = 2 * 20,
                   data_store: str = None, store_path: str = None):
         """Push data to a single destination
         """
@@ -219,10 +220,11 @@ class Seeder(Xeed):
                       storer: RWStorer = None, data_store: str = None, store_path: str = None):
         header['topic_id'] = topic_id
         header['table_id'] = table_id
-        # Header sent preparation: launch source table init event
+        """
         if int(header.get('age', 0)) == 1:
             header['event_type'] = 'source_table_init'
             header['event_token'] = datetime.now().strftime('%Y%m%d%H%M%S') + '-' + str(uuid.uuid4())
+        """
 
         if storer is None:
             header['data_store'] = 'body'
