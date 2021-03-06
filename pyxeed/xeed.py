@@ -19,7 +19,6 @@ class Xeed(Service):
 
     """
     log_level = logging.WARNING
-    api_url = 'api.x-i-a.com'
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
